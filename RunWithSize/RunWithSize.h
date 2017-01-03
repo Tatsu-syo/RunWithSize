@@ -1,3 +1,7 @@
+/*
+RunWithSIze (C) 2017 Tatsuhiko Syoji
+The sources for RunWithSIze are distributed under the MIT open source license
+*/
 #pragma once
 
 #include "targetver.h"
