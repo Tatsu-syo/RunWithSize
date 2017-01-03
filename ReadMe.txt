@@ -6,7 +6,7 @@ By Tatsuhiko Syoji(Tatsu) 2017
 
 [ファイル]
 ReadMe.txt:本ファイルです。
-LICENSE.txt : MITライセンスの条文です。
+LICENSE   : MITライセンスの条文です。
 RunWithSize.sln : Visual Studio 2015用ソリューションファイルです。
 RunWithSizeフォルダ配下のファイル : ソースファイルおよび、リソースファイルです。RunWithSize.vcxproj : Visual Studio 2015用プロジェクトファイルです。
 
