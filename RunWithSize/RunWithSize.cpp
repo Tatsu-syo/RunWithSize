@@ -111,7 +111,7 @@ void showErrorMessage(void)
 {
 	MessageBox(
 		NULL,
-		_T("RunWithSize width height x y CommandLine"),
+		_T("RunWithSize Version 1.0.1 By Tatsuhiko Syoji 2017\nUsage:\nRunWithSize width height x y CommandLine"),
 		_T("How to use"),
 		MB_OK | MB_ICONINFORMATION);
 }
