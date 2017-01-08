@@ -192,33 +192,37 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 	// 起動したプログラムのウインドウを探す
 	GetWindowThreadProcessId(hWnd, &wndPid);
 	if (wndPid == taqrgetPid) {
-		now = hWnd;
-		do {
-			parent = GetWindow(now, GW_OWNER);
-			if (parent != NULL) {
-				now = parent;
-			}
-		} while (parent != NULL);
-		
-		if (IsWindow(now)) {
-			GetWindowPlacement(now, &place);
-			if (!noXpos) {
-				place.rcNormalPosition.left = x;
-			}
-			if (!noYpos) {
-				place.rcNormalPosition.top = y;
-			}
-			place.rcNormalPosition.right = place.rcNormalPosition.left + width - 1;
-			place.rcNormalPosition.bottom = place.rcNormalPosition.top + height - 1;
+		// 見えないウインドウはサイズを調整してもしょうがないので、
+		// 
+		if (IsWindowVisible(hWnd)) {
+			now = hWnd;
+			do {
+				parent = GetWindow(now, GW_OWNER);
+				if (parent != NULL) {
+					now = parent;
+				}
+			} while (parent != NULL);
 
 			if (IsWindow(now)) {
-				SetWindowPlacement(now, &place);
+				GetWindowPlacement(now, &place);
+				if (!noXpos) {
+					place.rcNormalPosition.left = x;
+				}
+				if (!noYpos) {
+					place.rcNormalPosition.top = y;
+				}
+				place.rcNormalPosition.right = place.rcNormalPosition.left + width - 1;
+				place.rcNormalPosition.bottom = place.rcNormalPosition.top + height - 1;
+
+				if (IsWindow(now)) {
+					SetWindowPlacement(now, &place);
+				}
+
 			}
 
+			resized = true;
+			return FALSE;
 		}
-
-		resized = true;
-		return FALSE;
 	}
 	return TRUE;
 }
