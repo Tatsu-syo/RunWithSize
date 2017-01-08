@@ -6,7 +6,7 @@ The sources for RunWithSIze are distributed under the MIT open source license
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity
     version="1.0.0.0"
-    processorArchitecture="X86"
+    processorArchitecture="*"
     name="TatsuhikoSyoji.RunWithSize.RunWithSize"
     type="win32"
   />
@@ -17,7 +17,7 @@ The sources for RunWithSIze are distributed under the MIT open source license
             type="win32"
             name="Microsoft.Windows.Common-Controls"
             version="6.0.0.0"
-            processorArchitecture="X86"
+            processorArchitecture="*"
             publicKeyToken="6595b64144ccf1df"
             language="*"
         />
