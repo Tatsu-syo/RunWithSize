@@ -188,8 +188,6 @@ TCHAR *getWordStart(LPTSTR targetStr)
 BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 {
 	DWORD wndPid;
-	HWND parent;
-	HWND now;
 	WINDOWPLACEMENT place;
 	place.length = sizeof(WINDOWPLACEMENT);
 
@@ -201,33 +199,38 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 		// 見えないウインドウはサイズを調整してもしょうがないので、
 		// 
 		if (IsWindowVisible(hWnd)) {
-			now = hWnd;
-			do {
-				parent = GetWindow(now, GW_OWNER);
-				if (parent != NULL) {
-					now = parent;
-				}
-			} while (parent != NULL);
 
-			if (IsWindow(now)) {
-				GetWindowPlacement(now, &place);
+			if (IsWindow(hWnd)) {
+				GetWindowPlacement(hWnd, &place);
 				if (!noXpos) {
 					place.rcNormalPosition.left = x;
 				}
 				if (!noYpos) {
 					place.rcNormalPosition.top = y;
 				}
-				place.rcNormalPosition.right = place.rcNormalPosition.left + width - 1;
-				place.rcNormalPosition.bottom = place.rcNormalPosition.top + height - 1;
 
-				if (IsWindow(now)) {
-					SetWindowPlacement(now, &place);
+				RECT r;
+				GetWindowRect(hWnd, &r);
+				int orgWidth = r.right - r.left;
+				int orgHeight = r.bottom - r.top;
+
+				// もともとのウインドウの大きさが0*0のものはリサイズ対象としない。
+				// Delphi製アプリのウインドウクラスTApplicationのウインドウがこれに当たる。
+				// 表示されるウインドウを相手にせず、起動中のウインドウの列挙なら
+				// オーナーウインドウの有無で判定できるが、相手は表示されるウインドウなので
+				// このような手段をとる必要がある。
+				if ((orgWidth != 0) || (orgHeight != 0)) {
+					place.rcNormalPosition.right = place.rcNormalPosition.left + width - 1;
+					place.rcNormalPosition.bottom = place.rcNormalPosition.top + height - 1;
+
+					if (IsWindow(hWnd)) {
+						SetWindowPlacement(hWnd, &place);
+					}
 				}
-
 			}
 
 			resized = true;
-			return FALSE;
+			return TRUE;
 		}
 	}
 	return TRUE;
