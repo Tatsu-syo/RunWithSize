@@ -69,8 +69,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 	if (!_tcscmp(_T("?"), commandWord)) {
 		info.noXpos = true;
+		info.fromRight = false;
 	} else {
-		info.x = _tstoi(commandWord);
+		if (_totupper(*commandWord) == _T('R')) {
+			info.x = _tstoi(commandWord + 1);
+			info.fromRight = true;
+		} else {
+			info.x = _tstoi(commandWord);
+			info.fromRight = false;
+		}
 		info.noXpos = false;
 	}
 
@@ -88,9 +95,16 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 	if (!_tcscmp(_T("?"), commandWord)) {
 		info.noYpos = true;
+		info.fromBottom = false;
 	} else {
-		info.y = _tstoi(commandWord);
-		info.noYpos = true;
+		if (_totupper(*commandWord) == _T('B')) {
+			info.y = _tstoi(commandWord + 1);
+			info.fromBottom = true;
+		} else {
+			info.y = _tstoi(commandWord);
+			info.fromBottom = false;
+		}
+		info.noYpos = false;
 	}
 
 	// コマンドラインの取得
@@ -237,8 +251,18 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 				// オーナーウインドウの有無で判定できるが、相手は表示されるウインドウなので
 				// このような手段をとる必要がある。
 				if ((orgWidth != 0) || (orgHeight != 0)) {
-					place.rcNormalPosition.right = place.rcNormalPosition.left + width - 1;
-					place.rcNormalPosition.bottom = place.rcNormalPosition.top + height - 1;
+					if (posInfo->fromRight) {
+						place.rcNormalPosition.right = posInfo->x;
+						place.rcNormalPosition.left = place.rcNormalPosition.right - width + 1;
+					} else {
+						place.rcNormalPosition.right = place.rcNormalPosition.left + width - 1;
+					}
+					if (posInfo->fromBottom) {
+						place.rcNormalPosition.bottom = posInfo->y;
+						place.rcNormalPosition.top = place.rcNormalPosition.bottom - height + 1;
+					} else {
+						place.rcNormalPosition.bottom = place.rcNormalPosition.top + height - 1;
+					}
 
 					if (IsWindow(hWnd)) {
 						SetWindowPlacement(hWnd, &place);
