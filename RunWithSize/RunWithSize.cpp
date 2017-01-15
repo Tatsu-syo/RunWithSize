@@ -4,12 +4,6 @@ The sources for RunWithSIze are distributed under the MIT open source license
 */
 #include "RunWithSize.h"
 
-int x;
-int y;
-int width;
-int height;
-bool noXpos;
-bool noYpos;
 DWORD taqrgetPid;
 bool resized;
 
@@ -21,6 +15,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	TCHAR *commandWord;
 	TCHAR *commandLine;
 	TCHAR *nextStart;
+	struct positionInfo info;
 
 	// 幅の取得
 	commandWord = getWord(lpCmdLine, &nextStart);
@@ -34,7 +29,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		showErrorMessage();
 		return 1;
 	}
-	width = _tstoi(commandWord);
+	if (!_tcscmp(_T("?"), commandWord)) {
+		info.noWidth = true;
+	} else {
+		info.width = _tstoi(commandWord);
+		info.noWidth = false;
+	}
 
 	// 高さの取得
 	commandWord = getWord(nextStart, &nextStart);
@@ -48,7 +48,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		showErrorMessage();
 		return 1;
 	}
-	height = _tstoi(commandWord);
+	if (!_tcscmp(_T("?"), commandWord)) {
+		info.noHeight = true;
+	} else {
+		info.height = _tstoi(commandWord);
+		info.noHeight = false;
+	}
 
 	// 横位置の取得
 	commandWord = getWord(nextStart, &nextStart);
@@ -63,9 +68,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		return 1;
 	}
 	if (!_tcscmp(_T("?"), commandWord)) {
-		noXpos = true;
+		info.noXpos = true;
 	} else {
-		x = _tstoi(commandWord);
+		info.x = _tstoi(commandWord);
+		info.noXpos = false;
 	}
 
 	// 縦位置の取得
@@ -81,9 +87,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		return 1;
 	}
 	if (!_tcscmp(_T("?"), commandWord)) {
-		noYpos = true;
+		info.noYpos = true;
 	} else {
-		y = _tstoi(commandWord);
+		info.y = _tstoi(commandWord);
+		info.noYpos = true;
 	}
 
 	// コマンドラインの取得
@@ -95,12 +102,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 
 	return runWithSize(
-		width,
-		height,
-		x,
-		y,
-		noXpos,
-		noYpos,
+		&info,
 		commandLine);
 }
 
@@ -190,8 +192,9 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 	DWORD wndPid;
 	WINDOWPLACEMENT place;
 	place.length = sizeof(WINDOWPLACEMENT);
-
+	struct positionInfo *posInfo;
 	
+	posInfo = (struct positionInfo *)lparam;
 
 	// 起動したプログラムのウインドウを探す
 	GetWindowThreadProcessId(hWnd, &wndPid);
@@ -202,17 +205,31 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 
 			if (IsWindow(hWnd)) {
 				GetWindowPlacement(hWnd, &place);
-				if (!noXpos) {
-					place.rcNormalPosition.left = x;
+				if (!posInfo->noXpos) {
+					place.rcNormalPosition.left = posInfo->x;
 				}
-				if (!noYpos) {
-					place.rcNormalPosition.top = y;
+				if (!posInfo->noYpos) {
+					place.rcNormalPosition.top = posInfo->y;
 				}
 
 				RECT r;
 				GetWindowRect(hWnd, &r);
 				int orgWidth = r.right - r.left;
 				int orgHeight = r.bottom - r.top;
+
+				int width;
+				if (posInfo->noWidth) {
+					width = orgWidth + 1;
+				} else {
+					width = posInfo->width;
+				}
+
+				int height;
+				if (posInfo->noHeight) {
+					height = orgHeight + 1;
+				} else {
+					height = posInfo->height;
+				}
 
 				// もともとのウインドウの大きさが0*0のものはリサイズ対象としない。
 				// Delphi製アプリのウインドウクラスTApplicationのウインドウがこれに当たる。
@@ -239,22 +256,12 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 /**
  * 幅、高さ、(横位置)、(縦位置)を指定してアプリケーションを起動する
  *
- * @param  width 幅
- * @param  height 高さ
- * @param  x 横位置
- * @param  y 縦位置
- * @param  noXpos 横位置を指定するかどうか
- * @param  noYpos 縦位置を指定するかどうか
+ * @param  posInfo 位置情報
  * @param commandLine
  * 
  */
 int runWithSize(
-	int width,
-	int height,
-	int x,
-	int y,
-	bool noXpos,
-	bool noYpos,
+	struct positionInfo *posInfo,
 	TCHAR *commandLine
 )
 {
@@ -265,16 +272,16 @@ int runWithSize(
 	memset(&info, 0, sizeof(STARTUPINFO));
 	memset(&procInfo, 0, sizeof(PROCESS_INFORMATION));
 
-	if (!noXpos) {
-		info.dwX = x;
+	if (!posInfo->noXpos) {
+		info.dwX = posInfo->x;
 		info.dwFlags = STARTF_USEPOSITION;
 	}
-	if (!noYpos) {
-		info.dwY = y;
+	if (!posInfo->noYpos) {
+		info.dwY = posInfo->y;
 		info.dwFlags = STARTF_USEPOSITION;
 	}
-	info.dwXSize = width;
-	info.dwYSize = height;
+	info.dwXSize = posInfo->width;
+	info.dwYSize = posInfo->height;
 	info.dwFlags |= STARTF_USESIZE;
 
 	startResult = CreateProcess(
@@ -302,7 +309,7 @@ int runWithSize(
 		// アプリがリサイズしたり、アプリの起動を待ったりするので
 		// その分待つ
 		Sleep(1000);
-		EnumWindows(setWindowSize, 0);
+		EnumWindows(setWindowSize, (LPARAM)posInfo);
 	}
 
 

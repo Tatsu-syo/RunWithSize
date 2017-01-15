@@ -13,15 +13,24 @@ The sources for RunWithSIze are distributed under the MIT open source license
 #include <ctype.h>
 #include <memory.h>
 
+struct positionInfo {
+	int x;
+	int y;
+	int width;
+	int height;
+	bool noWidth;
+	bool noHeight;
+	bool noXpos;
+	bool noYpos;
+	bool fromRight;
+	bool fromBottom;
+	DWORD taqrgetPid;
+	bool resized;
+};
+
 void showErrorMessage(void);
 TCHAR *getWord(LPTSTR targetStr, TCHAR **nextPtr);
 TCHAR *getWordStart(LPTSTR targetStr);
 int runWithSize(
-	int width,
-	int height,
-	int x,
-	int y,
-	bool noXpos,
-	bool noYpos,
-	TCHAR *commandLine
+	struct positionInfo *posInfo,TCHAR *commandLine
 );
