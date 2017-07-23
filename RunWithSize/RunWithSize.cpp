@@ -132,7 +132,7 @@ void showErrorMessage(void)
 	//	(pMessageBox)GetProcAddress(user32Dll, "MessageBoxW");
 	MessageBox(
 		NULL,
-		_T("RunWithSize Version 1.0.2 By Tatsuhiko Syoji 2017\nUsage:\nRunWithSize width height x y CommandLine"),
+		_T("RunWithSize Version 1.0.3 By Tatsuhiko Syoji 2017\nUsage:\nRunWithSize width height x y CommandLine"),
 		_T("How to use"),
 		MB_OK | MB_ICONINFORMATION);
 	//FreeLibrary(user32Dll);
@@ -204,26 +204,43 @@ TCHAR *getWordStart(LPTSTR targetStr)
 BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 {
 	DWORD wndPid;
-	WINDOWPLACEMENT place;
-	place.length = sizeof(WINDOWPLACEMENT);
 	struct positionInfo *posInfo;
 	
+	DWORD version = GetVersion();
+	DWORD versionHigh = (DWORD)(LOBYTE(LOWORD(version)));
+
 	posInfo = (struct positionInfo *)lparam;
 
 	// 起動したプログラムのウインドウを探す
 	GetWindowThreadProcessId(hWnd, &wndPid);
 	if (wndPid == taqrgetPid) {
 		// 見えないウインドウはサイズを調整してもしょうがないので、
-		// 
+		// 対象としない
 		if (IsWindowVisible(hWnd)) {
+			RECT place;
 
 			if (IsWindow(hWnd)) {
-				GetWindowPlacement(hWnd, &place);
+				NONCLIENTMETRICS metrics;
+				FillMemory(&metrics, sizeof(NONCLIENTMETRICS), 0x00);
+				metrics.cbSize = sizeof(NONCLIENTMETRICS);
+				SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
+					metrics.cbSize,
+					&metrics,
+					0);
+
+				GetWindowRect(hWnd, &place);
 				if (!posInfo->noXpos) {
-					place.rcNormalPosition.left = posInfo->x;
+					place.left = posInfo->x;
+					if (versionHigh == 10) {
+						place.left = 
+							place.left - 
+							4 - 
+							(metrics.iPaddedBorderWidth - 1) -
+							(metrics.iBorderWidth - 1);
+					}
 				}
 				if (!posInfo->noYpos) {
-					place.rcNormalPosition.top = posInfo->y;
+					place.top = posInfo->y;
 				}
 
 				RECT r;
@@ -236,6 +253,12 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 					width = orgWidth + 1;
 				} else {
 					width = posInfo->width;
+					if (versionHigh == 10) {
+						width = 
+							width +
+							8 + 
+							((metrics.iBorderWidth - 1) + (metrics.iPaddedBorderWidth - 1)) * 2;
+					}
 				}
 
 				int height;
@@ -243,6 +266,14 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 					height = orgHeight + 1;
 				} else {
 					height = posInfo->height;
+					if (versionHigh == 10) {
+						height = 
+							height + 
+							(metrics.iBorderWidth - 1) +
+							(metrics.iPaddedBorderWidth - 1) +
+							4;
+						
+					}
 				}
 
 				// もともとのウインドウの大きさが0*0のものはリサイズ対象としない。
@@ -252,20 +283,20 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 				// このような手段をとる必要がある。
 				if ((orgWidth != 0) || (orgHeight != 0)) {
 					if (posInfo->fromRight) {
-						place.rcNormalPosition.right = posInfo->x;
-						place.rcNormalPosition.left = place.rcNormalPosition.right - width + 1;
+						place.right = posInfo->x;
+						place.left = place.right - width + 1;
 					} else {
-						place.rcNormalPosition.right = place.rcNormalPosition.left + width - 1;
+						place.right = place.left + width - 1;
 					}
 					if (posInfo->fromBottom) {
-						place.rcNormalPosition.bottom = posInfo->y;
-						place.rcNormalPosition.top = place.rcNormalPosition.bottom - height + 1;
+						place.bottom = posInfo->y;
+						place.top = place.bottom - height + 1;
 					} else {
-						place.rcNormalPosition.bottom = place.rcNormalPosition.top + height - 1;
+						place.bottom = place.top + height - 1;
 					}
 
 					if (IsWindow(hWnd)) {
-						SetWindowPlacement(hWnd, &place);
+						SetWindowPos(hWnd, NULL, place.left, place.top, width, height, SWP_NOZORDER);
 					}
 				}
 			}
