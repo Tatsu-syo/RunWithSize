@@ -1,4 +1,4 @@
-﻿RunWithSize Version 1.0.2 source file package
+﻿RunWithSize Version 1.0.3 source file package
 By Tatsuhiko Syoji(Tatsu) 2017
 
 [必要となるプログラム]
