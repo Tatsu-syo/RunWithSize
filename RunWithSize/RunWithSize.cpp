@@ -229,31 +229,50 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 					0);
 
 				GetWindowRect(hWnd, &place);
+
+				// 左の計算
 				if (!posInfo->noXpos) {
+					// 指定した点を入れておく
 					place.left = posInfo->x;
+					place.right = posInfo->x;
 					if (versionHigh == 10) {
-						place.left = 
-							place.left - 
-							4 - 
-							(metrics.iPaddedBorderWidth - 1) -
-							(metrics.iBorderWidth - 1);
+						// Windows 10は見た目のウインドウの外に透明の枠線と空白があるので
+						// 位置を見た目の位置に合わせる
+						if (posInfo->fromRight) {
+							// 右からの位置計算の場合
+							place.right =
+								posInfo->x +
+								4 +
+								(metrics.iPaddedBorderWidth - 1) +
+								(metrics.iBorderWidth - 1);
+						} else {
+							place.left =
+								place.left -
+								4 -
+								(metrics.iPaddedBorderWidth - 1) -
+								(metrics.iBorderWidth - 1);
+						}
 					}
 				}
 				if (!posInfo->noYpos) {
 					place.top = posInfo->y;
 				}
 
+				// 幅・高さの計算
 				RECT r;
 				GetWindowRect(hWnd, &r);
 				int orgWidth = r.right - r.left;
 				int orgHeight = r.bottom - r.top;
 
+				// 幅の計算
 				int width;
 				if (posInfo->noWidth) {
 					width = orgWidth + 1;
 				} else {
 					width = posInfo->width;
 					if (versionHigh == 10) {
+						// Windows 10は見た目の幅の外側に透明の枠線と空白があるので、
+						// 見た目の幅を指定した幅に合わせる
 						width = 
 							width +
 							8 + 
@@ -283,7 +302,7 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 				// このような手段をとる必要がある。
 				if ((orgWidth != 0) || (orgHeight != 0)) {
 					if (posInfo->fromRight) {
-						place.right = posInfo->x;
+						// 右からの指定の場合は左側の指定を直す。
 						place.left = place.right - width + 1;
 					} else {
 						place.right = place.left + width - 1;
