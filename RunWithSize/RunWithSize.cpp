@@ -256,6 +256,19 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 				}
 				if (!posInfo->noYpos) {
 					place.top = posInfo->y;
+					place.bottom = posInfo->y;
+					if (versionHigh == 10) {
+						// Windows 10は見た目のウインドウの外に透明の枠線と空白があるので
+						// 位置を見た目の位置に合わせる
+						// ただし、上は見た目とシステムの上端が合う。
+						if (posInfo->fromBottom) {
+							place.bottom = posInfo->y +
+								4 +
+								(metrics.iBorderWidth - 1) +
+								(metrics.iPaddedBorderWidth - 1);
+						}
+					}
+
 				}
 
 				// 幅・高さの計算
@@ -308,7 +321,6 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 						place.right = place.left + width - 1;
 					}
 					if (posInfo->fromBottom) {
-						place.bottom = posInfo->y;
 						place.top = place.bottom - height + 1;
 					} else {
 						place.bottom = place.top + height - 1;
