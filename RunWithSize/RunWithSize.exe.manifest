@@ -5,7 +5,7 @@ The sources for RunWithSIze are distributed under the MIT open source license
 -->
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity
-    version="1.0.2.0"
+    version="1.0.3.0"
     processorArchitecture="*"
     name="TatsuhikoSyoji.RunWithSize.RunWithSize"
     type="win32"
