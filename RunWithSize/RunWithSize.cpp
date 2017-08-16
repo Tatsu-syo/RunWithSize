@@ -6,6 +6,7 @@ The sources for RunWithSIze are distributed under the MIT open source license
 
 DWORD taqrgetPid;
 bool resized;
+bool noWin10;
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
@@ -16,6 +17,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	TCHAR *commandLine;
 	TCHAR *nextStart;
 	struct positionInfo info;
+
+	noWin10 = false;
 
 	// 幅の取得
 	commandWord = getWord(lpCmdLine, &nextStart);
@@ -108,7 +111,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 
 	// コマンドラインの取得
+	// まず、次の語句のところまで行く。
 	commandLine = getWordStart(nextStart);
+
+	if (commandLine != NULL) {
+		commandLine = getOptions(commandLine);
+	}
+
 	if (commandLine == NULL) {
 		// コマンドラインがない場合は何もしない
 		showErrorMessage();
@@ -118,6 +127,27 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	return runWithSize(
 		&info,
 		commandLine);
+}
+
+/**
+ * オプションを取得する。
+ *
+ * @param start 取得開始位置
+ * @return オプションを除いたコマンドライン開始位置
+ */
+TCHAR *getOptions(TCHAR *start)
+{
+	TCHAR *p;
+
+	p = start;
+
+	if (strcmpspc(p, _T("/no10")) != NULL) {
+		noWin10 = true;
+		p = p + 5;
+		p = getWordStart(p);
+	}
+
+	return p;
 }
 
 //typedef int (WINAPI *pMessageBox)(HWND hWnd, LPCTSTR lpText, LPCTSTR lpCaption, UINT uType);
@@ -132,14 +162,15 @@ void showErrorMessage(void)
 	//	(pMessageBox)GetProcAddress(user32Dll, "MessageBoxW");
 	MessageBox(
 		NULL,
-		_T("RunWithSize Version 1.0.3 By Tatsuhiko Syoji 2017\nUsage:\nRunWithSize width height x y CommandLine"),
+		_T("RunWithSize Version 1.0.4 By Tatsuhiko Syoji 2017\nUsage:\nRunWithSize width height x y CommandLine"),
 		_T("How to use"),
 		MB_OK | MB_ICONINFORMATION);
 	//FreeLibrary(user32Dll);
 }
 
 /**
- * 単語を切り出す。
+ * 単語を切り出す。<br>
+ * 単語が見つかった場合、NULLターミネートを行う。
  *
  * @param targetStr 単語切り出し対象文字列
  * @param nextPtr 次の単語切り出し開始位置
@@ -200,6 +231,44 @@ TCHAR *getWordStart(LPTSTR targetStr)
 	return p;
 }
 
+/**
+ * スペースで区切られた単語を比較する
+ *
+ * @param target 検索対象文字列
+ * @param toSearch 比較する文字列
+ * @return 非NULL:検索対象文字列は比較する文字列だった NULL:検索対象文字列は比較する文字列ではない。
+ */
+TCHAR *strcmpspc(TCHAR *target, TCHAR *toSearch)
+{
+	TCHAR *p;
+	TCHAR *s;
+
+	p = target;
+	s = toSearch;
+
+
+	p = target;
+	while (*p) {
+
+		if (_istspace(*p)) {
+			// 単語の切れ目でスペースが来たら見つかったこととする。
+			if (*s == _T('\0')) {
+				return target;
+			}
+		}
+		if (*p != *s) {
+			return NULL;
+		}
+		p++;
+		s++;
+	}
+	if (*s == _T('\0')) {
+		// どっちも終わっていた
+		return target;
+	}
+	return NULL;
+}
+
 // 各ウインドウに対するチェック処理を行うコールバック
 BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 {
@@ -235,7 +304,7 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 					// 指定した点を入れておく
 					place.left = posInfo->x;
 					place.right = posInfo->x;
-					if (versionHigh == 10) {
+					if ((versionHigh == 10) && (!noWin10)) {
 						// Windows 10は見た目のウインドウの外に透明の枠線と空白があるので
 						// 位置を見た目の位置に合わせる
 						if (posInfo->fromRight) {
@@ -257,7 +326,7 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 				if (!posInfo->noYpos) {
 					place.top = posInfo->y;
 					place.bottom = posInfo->y;
-					if (versionHigh == 10) {
+					if ((versionHigh == 10) && (!noWin10)) {
 						// Windows 10は見た目のウインドウの外に透明の枠線と空白があるので
 						// 位置を見た目の位置に合わせる
 						// ただし、上は見た目とシステムの上端が合う。
@@ -283,7 +352,7 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 					width = orgWidth + 1;
 				} else {
 					width = posInfo->width;
-					if (versionHigh == 10) {
+					if ((versionHigh == 10) && (!noWin10)) {
 						// Windows 10は見た目の幅の外側に透明の枠線と空白があるので、
 						// 見た目の幅を指定した幅に合わせる
 						width = 
@@ -298,7 +367,7 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 					height = orgHeight + 1;
 				} else {
 					height = posInfo->height;
-					if (versionHigh == 10) {
+					if ((versionHigh == 10) && (!noWin10)) {
 						height = 
 							height + 
 							(metrics.iBorderWidth - 1) +

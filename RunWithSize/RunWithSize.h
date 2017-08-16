@@ -47,6 +47,8 @@ struct positionInfo {
 void showErrorMessage(void);
 TCHAR *getWord(LPTSTR targetStr, TCHAR **nextPtr);
 TCHAR *getWordStart(LPTSTR targetStr);
+TCHAR *strcmpspc(TCHAR *target, TCHAR *toSearch);
+TCHAR *getOptions(TCHAR *start);
 int runWithSize(
 	struct positionInfo *posInfo,TCHAR *commandLine
 );
