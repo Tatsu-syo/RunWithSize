@@ -7,6 +7,7 @@ The sources for RunWithSIze are distributed under the MIT open source license
 DWORD taqrgetPid;
 bool resized;
 bool noWin10;
+bool topMost;
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
@@ -19,6 +20,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	struct positionInfo info;
 
 	noWin10 = false;
+	topMost = false;
 
 	// 幅の取得
 	commandWord = getWord(lpCmdLine, &nextStart);
@@ -138,13 +140,33 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 TCHAR *getOptions(TCHAR *start)
 {
 	TCHAR *p;
+	bool found = true;
 
 	p = start;
 
-	if (strcmpspc(p, _T("/no10")) != NULL) {
-		noWin10 = true;
-		p = p + 5;
-		p = getWordStart(p);
+	while (found) {
+		if (strcmpspc(p, _T("/no10")) != NULL) {
+			noWin10 = true;
+			p = p + 5;
+			p = getWordStart(p);
+			if (p == NULL) {
+				return NULL;
+			}
+			found = true;
+			continue;
+		}
+
+		if (strcmpspc(p, _T("/top")) != NULL) {
+			topMost = true;
+			p = p + 4;
+			p = getWordStart(p);
+			if (p == NULL) {
+				return NULL;
+			}
+			found = true;
+			continue;
+		}
+		found = false;
 	}
 
 	return p;
@@ -162,7 +184,10 @@ void showErrorMessage(void)
 	//	(pMessageBox)GetProcAddress(user32Dll, "MessageBoxW");
 	MessageBox(
 		NULL,
-		_T("RunWithSize Version 1.0.4 By Tatsuhiko Syoji 2017\nUsage:\nRunWithSize width height x y CommandLine"),
+		_T("RunWithSize Version 1.0.4 By Tatsuhiko Syoji 2017\nUsage:\nRunWithSize width height x y (Options...) CommandLine\n"
+			"Options:\n"
+			"/top Show window above other windows\n"
+			"/no10 Don't adjust window size and position on Windows 10.\n"),
 		_T("How to use"),
 		MB_OK | MB_ICONINFORMATION);
 	//FreeLibrary(user32Dll);
@@ -274,7 +299,7 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 {
 	DWORD wndPid;
 	struct positionInfo *posInfo;
-	
+
 	DWORD version = GetVersion();
 	DWORD versionHigh = (DWORD)(LOBYTE(LOWORD(version)));
 
@@ -355,9 +380,9 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 					if ((versionHigh == 10) && (!noWin10)) {
 						// Windows 10は見た目の幅の外側に透明の枠線と空白があるので、
 						// 見た目の幅を指定した幅に合わせる
-						width = 
+						width =
 							width +
-							8 + 
+							8 +
 							((metrics.iBorderWidth - 1) + (metrics.iPaddedBorderWidth - 1)) * 2;
 					}
 				}
@@ -368,12 +393,12 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 				} else {
 					height = posInfo->height;
 					if ((versionHigh == 10) && (!noWin10)) {
-						height = 
-							height + 
+						height =
+							height +
 							(metrics.iBorderWidth - 1) +
 							(metrics.iPaddedBorderWidth - 1) +
 							4;
-						
+
 					}
 				}
 
@@ -396,7 +421,20 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
 					}
 
 					if (IsWindow(hWnd)) {
-						SetWindowPos(hWnd, NULL, place.left, place.top, width, height, SWP_NOZORDER);
+						HWND insertAfter = NULL;
+						UINT flags = SWP_NOZORDER;
+						if (topMost) {
+							insertAfter = HWND_TOPMOST;
+							flags = SWP_SHOWWINDOW;
+						}
+						SetWindowPos(
+							hWnd,
+							insertAfter,
+							place.left,
+							place.top,
+							width,
+							height,
+							flags);
 					}
 				}
 			}
@@ -413,7 +451,7 @@ BOOL CALLBACK setWindowSize(HWND hWnd, LPARAM lparam)
  *
  * @param  posInfo 位置情報
  * @param commandLine
- * 
+ *
  */
 int runWithSize(
 	struct positionInfo *posInfo,
